@@ -257,6 +257,7 @@ uploads/
 *.doc
 *.docx
 *.txt
+!requirements.txt
 
 # Database files
 *.db
