@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, ExternalLink, Clock, User, Calendar, Eye, Bot, TrendingUp } from 'lucide-react';
+import { CheckCircle, XCircle, ExternalLink, Clock, User, Calendar, Eye, Bot, TrendingUp, TestTube, AlertCircle } from 'lucide-react';
 import Button from '../common/Button';
 import ConfirmDialog from '../common/ConfirmDialog';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -74,26 +74,31 @@ const ReviewAgents: React.FC = () => {
     });
   };
 
+  const testAgent = (agent: Agent) => {
+    // Open the agent URL in the same tab for testing
+    window.location.href = agent.app_url;
+  };
+
   const confirmAction = async () => {
     if (!confirmDialog.agentId) return;
-    
+
     const { agentId, action } = confirmDialog;
     setActionLoading(prev => ({ ...prev, [agentId]: action }));
-    
+
     try {
       if (action === 'approve') {
         await apiService.approveAgentAdmin(agentId, true);
       } else {
         await apiService.approveAgentAdmin(agentId, false, 'Rejected by admin');
       }
-      
+
       // Update the agent status in the list
-      setAllAgents(prev => prev.map(agent => 
-        agent.id === agentId 
+      setAllAgents(prev => prev.map(agent =>
+        agent.id === agentId
           ? { ...agent, status: action === 'approve' ? 'approved' : 'rejected' }
           : agent
       ));
-      
+
       setConfirmDialog({
         isOpen: false,
         agentId: null,
@@ -203,6 +208,7 @@ const ReviewAgents: React.FC = () => {
                   </div>
                 </div>
                 
+
                 {/* Actions */}
                 <div className="p-6 bg-gray-900/30 flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -215,6 +221,14 @@ const ReviewAgents: React.FC = () => {
                       <ExternalLink className="w-4 h-4" />
                       <span className="text-sm font-medium">Visit Agent</span>
                     </a>
+                    <span className="text-gray-600">•</span>
+                    <button
+                      onClick={() => testAgent(agent)}
+                      className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      <TestTube className="w-4 h-4" />
+                      <span className="text-sm font-medium">Test Agent</span>
+                    </button>
                     <span className="text-gray-600">•</span>
                     <span className="text-sm text-gray-400">
                       URL: {agent.app_url}
