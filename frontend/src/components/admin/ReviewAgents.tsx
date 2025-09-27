@@ -4,6 +4,7 @@ import Button from '../common/Button';
 import ConfirmDialog from '../common/ConfirmDialog';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorMessage from '../common/ErrorMessage';
+import AgentModal from '../agents/AgentModal';
 import { Agent, AdminStats } from '../../types';
 import { apiService } from '../../services/api';
 import { AGENT_CATEGORIES } from '../../utils/constants';
@@ -15,18 +16,24 @@ const ReviewAgents: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<{ [key: number]: 'approve' | 'reject' | null }>({});
   const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
-  
+
+  // Agent modal state
+  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
+
   // Confirm dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     agentId: number | null;
     action: 'approve' | 'reject';
     agentName: string;
+    showTestOption?: boolean;
   }>({
     isOpen: false,
     agentId: null,
     action: 'approve',
-    agentName: ''
+    agentName: '',
+    showTestOption: false
   });
 
   useEffect(() => {
@@ -70,13 +77,24 @@ const ReviewAgents: React.FC = () => {
       isOpen: true,
       agentId: agent.id,
       action,
-      agentName: agent.name
+      agentName: agent.name,
+      showTestOption: action === 'approve'
     });
   };
 
-  const testAgent = (agent: Agent) => {
-    // Open the agent URL in the same tab for testing
-    window.location.href = agent.app_url;
+  const openAgentModal = (agent: Agent) => {
+    setSelectedAgent(agent);
+    setIsAgentModalOpen(true);
+  };
+
+  const testAgentBeforeApprove = () => {
+    if (confirmDialog.agentId) {
+      const agent = allAgents.find(a => a.id === confirmDialog.agentId);
+      if (agent) {
+        setSelectedAgent(agent);
+        setIsAgentModalOpen(true);
+      }
+    }
   };
 
   const confirmAction = async () => {
@@ -103,7 +121,8 @@ const ReviewAgents: React.FC = () => {
         isOpen: false,
         agentId: null,
         action: 'approve',
-        agentName: ''
+        agentName: '',
+        showTestOption: false
       });
     } catch (err: any) {
       setError(err.message || `Failed to ${action} agent`);
@@ -212,21 +231,11 @@ const ReviewAgents: React.FC = () => {
                 {/* Actions */}
                 <div className="p-6 bg-gray-900/30 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <a
-                      href={agent.app_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => openAgentModal(agent)}
                       className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors"
                     >
-                      <ExternalLink className="w-4 h-4" />
-                      <span className="text-sm font-medium">Visit Agent</span>
-                    </a>
-                    <span className="text-gray-600">•</span>
-                    <button
-                      onClick={() => testAgent(agent)}
-                      className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 transition-colors"
-                    >
-                      <TestTube className="w-4 h-4" />
+                      <Eye className="w-4 h-4" />
                       <span className="text-sm font-medium">Test Agent</span>
                     </button>
                     <span className="text-gray-600">•</span>
@@ -298,17 +307,72 @@ const ReviewAgents: React.FC = () => {
         </div>
       )}
 
-      {/* Confirm Dialog */}
-      <ConfirmDialog
-        isOpen={confirmDialog.isOpen}
-        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
-        onConfirm={confirmAction}
-        title={`${confirmDialog.action === 'approve' ? 'Approve' : 'Reject'} Agent`}
-        message={`Are you sure you want to ${confirmDialog.action} "${confirmDialog.agentName}"?`}
-        confirmText={confirmDialog.action === 'approve' ? 'Approve' : 'Reject'}
-        variant={confirmDialog.action === 'approve' ? 'info' : 'danger'}
-        loading={!!confirmDialog.agentId && !!actionLoading[confirmDialog.agentId]}
-      />
+      {/* Agent Modal */}
+      {selectedAgent && (
+        <AgentModal
+          agent={selectedAgent}
+          isOpen={isAgentModalOpen}
+          onClose={() => {
+            setIsAgentModalOpen(false);
+            setSelectedAgent(null);
+          }}
+        />
+      )}
+
+      {/* Custom Confirm Dialog with Test Option */}
+      {confirmDialog.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })} />
+          <div className="bg-gray-900 rounded-xl shadow-2xl w-full max-w-md mx-4 relative z-10 border border-gray-700">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-white mb-4">
+                {confirmDialog.action === 'approve' ? 'Approve' : 'Reject'} Agent
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Are you sure you want to {confirmDialog.action} "{confirmDialog.agentName}"?
+              </p>
+
+              {confirmDialog.showTestOption && (
+                <div className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <div className="flex items-center gap-2 text-blue-400 mb-2">
+                    <TestTube className="w-4 h-4" />
+                    <span className="text-sm font-medium">Test Before Approval</span>
+                  </div>
+                  <p className="text-sm text-gray-400 mb-3">
+                    It's recommended to test the agent before approving to ensure it works correctly.
+                  </p>
+                  <Button
+                    onClick={testAgentBeforeApprove}
+                    variant="ghost"
+                    size="sm"
+                    className="border border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                  >
+                    <TestTube className="w-4 h-4 mr-2" />
+                    Test Agent First
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex gap-3 justify-end">
+                <Button
+                  onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+                  variant="ghost"
+                  disabled={!!confirmDialog.agentId && !!actionLoading[confirmDialog.agentId]}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmAction}
+                  variant={confirmDialog.action === 'approve' ? 'primary' : 'danger'}
+                  loading={!!confirmDialog.agentId && !!actionLoading[confirmDialog.agentId]}
+                >
+                  {confirmDialog.action === 'approve' ? 'Approve' : 'Reject'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

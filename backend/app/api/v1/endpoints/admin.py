@@ -239,6 +239,43 @@ async def deactivate_user(
     }
 
 
+@router.delete("/users/{user_id}/reject")
+async def reject_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin)
+):
+    """Reject/Delete a pending user registration"""
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    if user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot reject an active user"
+        )
+
+    if user.id == current_admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot reject your own account"
+        )
+
+    # Delete the user
+    db.delete(user)
+    db.commit()
+
+    return {
+        "message": "User rejected and removed successfully",
+        "user_id": user_id
+    }
+
+
 @router.patch("/users/{user_id}/make-admin")
 async def make_user_admin(
     user_id: int,
@@ -246,29 +283,29 @@ async def make_user_admin(
     current_admin: User = Depends(get_current_admin)
 ):
     """Grant admin role to a user"""
-    
+
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found"
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot grant admin role to inactive user"
         )
-    
+
     if "admin" in user.roles:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is already an admin"
         )
-    
+
     user.roles = list(set(user.roles + ["admin"]))
     db.commit()
-    
+
     return {
         "message": "User granted admin role successfully",
         "user_id": user_id,

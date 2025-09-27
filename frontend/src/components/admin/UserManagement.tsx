@@ -90,15 +90,21 @@ const UserManagement: React.FC = () => {
           // Refresh all users to show the newly approved user
           loadUsers();
           break;
+        case 'reject':
+          await apiService.rejectUser(userId);
+          setPendingUsers(prev => prev.filter(user => user.id !== userId));
+          // Also remove from all users if it exists there
+          setAllUsers(prev => prev.filter(user => user.id !== userId));
+          break;
         case 'deactivate':
           await apiService.deactivateUser(userId);
-          setAllUsers(prev => prev.map(user => 
+          setAllUsers(prev => prev.map(user =>
             user.id === userId ? { ...user, is_active: false } : user
           ));
           break;
         case 'make_admin':
           await apiService.makeUserAdmin(userId);
-          setAllUsers(prev => prev.map(user => 
+          setAllUsers(prev => prev.map(user =>
             user.id === userId ? { ...user, roles: [...user.roles, 'admin'] } : user
           ));
           break;
@@ -120,6 +126,7 @@ const UserManagement: React.FC = () => {
   const getActionText = (action: string) => {
     switch (action) {
       case 'approve': return 'approve';
+      case 'reject': return 'reject';
       case 'deactivate': return 'deactivate';
       case 'make_admin': return 'grant admin access to';
       default: return action;
@@ -427,16 +434,28 @@ const UserManagement: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {!user.is_active ? (
                       // Pending user actions
-                      <Button
-                        onClick={() => handleUserAction(user, 'approve')}
-                        variant="primary"
-                        size="sm"
-                        loading={isProcessing === 'approve'}
-                        disabled={!!isProcessing}
-                      >
-                        <UserCheck className="w-4 h-4 mr-2" />
-                        Approve
-                      </Button>
+                      <>
+                        <Button
+                          onClick={() => handleUserAction(user, 'reject')}
+                          variant="danger"
+                          size="sm"
+                          loading={isProcessing === 'reject'}
+                          disabled={!!isProcessing}
+                        >
+                          <UserX className="w-4 h-4 mr-2" />
+                          Reject
+                        </Button>
+                        <Button
+                          onClick={() => handleUserAction(user, 'approve')}
+                          variant="primary"
+                          size="sm"
+                          loading={isProcessing === 'approve'}
+                          disabled={!!isProcessing}
+                        >
+                          <UserCheck className="w-4 h-4 mr-2" />
+                          Approve
+                        </Button>
+                      </>
                     ) : (
                       // Active user actions
                       <>
@@ -502,7 +521,7 @@ const UserManagement: React.FC = () => {
         title={`User Action Confirmation`}
         message={`Are you sure you want to ${getActionText(confirmDialog.action)} "${confirmDialog.userName}"?`}
         confirmText="Confirm"
-        variant={confirmDialog.action === 'deactivate' ? 'danger' : 'info'}
+        variant={confirmDialog.action === 'deactivate' || confirmDialog.action === 'reject' ? 'danger' : 'info'}
         loading={!!confirmDialog.userId && !!actionLoading[confirmDialog.userId]}
       />
     </div>

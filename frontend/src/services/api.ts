@@ -226,6 +226,12 @@ class ApiService {
     });
   }
 
+  async rejectUser(id: number): Promise<{ message: string }> {
+    return this.request(`/admin/users/${id}/reject`, {
+      method: 'DELETE',
+    });
+  }
+
   async getAdminStats(): Promise<AdminStats> {
     return this.request('/admin/stats');
   }
