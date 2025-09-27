@@ -19,7 +19,7 @@ class ApiService {
   private token: string | null = null;
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_API_URL || 'http://13.200.13.37:8000';
+    this.baseUrl = 'http://13.200.13.37:8000';
     this.token = localStorage.getItem('auth_token');
   }
 

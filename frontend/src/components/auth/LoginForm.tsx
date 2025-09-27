@@ -26,7 +26,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onOTPRequired, onSwitchToRegister
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://13.200.13.37:8000'}/api/v1/auth/login`, {
+      const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
