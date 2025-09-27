@@ -22,7 +22,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) =>
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl mb-4">
             <span className="text-2xl font-bold text-white">🤖</span>
           </div>
-          <h1 className="text-3xl font-bold text-orange-500 mb-2">AI Agent Hub</h1>
+          <h1 className="text-3xl font-bold text-orange-500 mb-2">FARM</h1>
           <h2 className="text-xl font-semibold text-white mb-2">{title}</h2>
           {subtitle && (
             <p className="text-gray-400">{subtitle}</p>

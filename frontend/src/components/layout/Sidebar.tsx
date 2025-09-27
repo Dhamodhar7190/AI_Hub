@@ -60,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed }) => {
           </div>
           {!isCollapsed && (
             <div>
-              <h1 className="text-xl font-bold text-orange-500">AI Agent Hub</h1>
+              <h1 className="text-xl font-bold text-orange-500">FARM</h1>
             </div>
           )}
         </div>

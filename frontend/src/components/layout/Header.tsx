@@ -31,7 +31,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarCollapsed }) 
       case path === '/profile':
         return 'Profile';
       default:
-        return 'AI Agent Hub';
+        return 'FARM';
     }
   };
 
@@ -54,7 +54,7 @@ const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarCollapsed }) 
       case path === '/profile':
         return 'View and edit your profile';
       default:
-        return 'Welcome to AI Agent Hub';
+        return 'Welcome to FARM';
     }
   };
 
