@@ -1,17 +1,53 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from datetime import datetime
 
 from app.core.config import settings
-from app.core.database import engine
+from app.core.database import engine, SessionLocal
+from app.core.security import get_password_hash
 from app.api.v1.api import api_router
 
 # Import all models to register them with Base.metadata
 from app.models import user, agent
 from app.models.base import Base
+from app.models.user import User
+from app.models.agent import Agent, AgentStatus, AgentCategory
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+def create_initial_data():
+    """Create initial admin user and sample data on startup"""
+    db = SessionLocal()
+    try:
+        # Check if admin already exists
+        admin_user = db.query(User).filter(User.username == "admin").first()
+        if not admin_user:
+            # Create admin user
+            admin_user = User(
+                email="admin@agenthub.com",
+                username="admin",
+                password_hash=get_password_hash("admin123"),
+                roles=["user", "admin"],
+                is_active=True,
+                approved_at=datetime.utcnow()
+            )
+            db.add(admin_user)
+            db.commit()
+            db.refresh(admin_user)
+            print("✅ Admin user created: admin/admin123")
+        else:
+            print("✅ Admin user already exists")
+
+    except Exception as e:
+        print(f"❌ Error creating initial data: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+# Create initial data on startup
+create_initial_data()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
