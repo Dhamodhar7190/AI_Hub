@@ -5,8 +5,8 @@ import { AuthProvider } from './components/AuthProvider';
 import AuthLayout from './components/auth/AuthLayout';
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
-import OTPModal from './components/auth/OTPModal';
-import RegistrationOTPModal from './components/auth/RegistrationOTPModal';
+import OTPVerification from './pages/auth/OTPVerification';
+import RegistrationOTPVerification from './pages/auth/RegistrationOTPVerification';
 import Layout from './components/layout/Layout';
 import Dashboard from './components/pages/Dashboard';
 import SubmitAgent from './components/pages/SubmitAgent';
@@ -14,16 +14,11 @@ import MyAgents from './components/pages/MyAgents';
 import ReviewAgents from './components/admin/ReviewAgents';
 import UserManagement from './components/admin/UserManagement';
 import Profile from './components/pages/Profile';
-import { OTPResponse } from './types';
 import './styles/globals.css';
 
 // Auth Page Component
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [showLoginOTP, setShowLoginOTP] = useState(false);
-  const [showRegisterOTP, setShowRegisterOTP] = useState(false);
-  const [loginOTPData, setLoginOTPData] = useState<(OTPResponse & { email: string }) | null>(null);
-  const [registerOTPData, setRegisterOTPData] = useState<{ message: string; otp_code: string; expires_in_minutes: number; email: string } | null>(null);
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -38,32 +33,6 @@ const AuthPage: React.FC = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleLoginOTPRequired = (data: OTPResponse & { email: string }) => {
-    setLoginOTPData(data);
-    setShowLoginOTP(true);
-  };
-
-  const handleLoginOTPClose = () => {
-    setShowLoginOTP(false);
-    setLoginOTPData(null);
-  };
-
-  const handleRegisterOTPRequired = (data: { message: string; otp_code: string; expires_in_minutes: number; email: string }) => {
-    setRegisterOTPData(data);
-    setShowRegisterOTP(true);
-  };
-
-  const handleRegisterOTPClose = () => {
-    setShowRegisterOTP(false);
-    setRegisterOTPData(null);
-  };
-
-  const handleRegistrationSuccess = () => {
-    setShowRegisterOTP(false);
-    setRegisterOTPData(null);
-    setIsLogin(true);
-  };
-
   return (
     <AuthLayout
       title={isLogin ? 'Welcome Back' : 'Create Account'}
@@ -71,37 +40,11 @@ const AuthPage: React.FC = () => {
     >
       {isLogin ? (
         <LoginForm
-          onOTPRequired={handleLoginOTPRequired}
           onSwitchToRegister={() => setIsLogin(false)}
         />
       ) : (
         <RegisterForm
           onSwitchToLogin={() => setIsLogin(true)}
-          onRegistrationSuccess={handleRegistrationSuccess}
-          onOTPRequired={handleRegisterOTPRequired}
-        />
-      )}
-
-      {/* Login OTP Modal */}
-      {showLoginOTP && loginOTPData && (
-        <OTPModal
-          isOpen={showLoginOTP}
-          onClose={handleLoginOTPClose}
-          email={loginOTPData.email}
-          otpCode={loginOTPData.otp_code}
-          expiresInMinutes={loginOTPData.expires_in_minutes}
-        />
-      )}
-
-      {/* Registration OTP Modal */}
-      {showRegisterOTP && registerOTPData && (
-        <RegistrationOTPModal
-          isOpen={showRegisterOTP}
-          onClose={handleRegisterOTPClose}
-          email={registerOTPData.email}
-          otpCode={registerOTPData.otp_code}
-          expiresInMinutes={registerOTPData.expires_in_minutes}
-          onSuccess={handleRegistrationSuccess}
         />
       )}
     </AuthLayout>
@@ -156,6 +99,8 @@ const AppRouter: React.FC = () => {
     <Router>
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/verify-otp" element={<OTPVerification />} />
+        <Route path="/verify-registration" element={<RegistrationOTPVerification />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route
           path="/dashboard"

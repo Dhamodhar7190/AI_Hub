@@ -1,15 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
 import Button from '../common/Button';
-import { useAuth } from '../../hooks';
-import { OTPResponse } from '../../types';
 
 interface LoginFormProps {
-  onOTPRequired: (otpData: OTPResponse & { email: string }) => void;
   onSwitchToRegister: () => void;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onOTPRequired, onSwitchToRegister }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +44,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onOTPRequired, onSwitchToRegister
       const result = await response.json();
 
       if (response.ok) {
-        onOTPRequired({ ...result, email });
+        navigate('/verify-otp', {
+          state: {
+            email,
+            expiresInMinutes: result.expires_in_minutes
+          }
+        });
       } else {
         // Handle validation errors
         if (Array.isArray(result.detail)) {

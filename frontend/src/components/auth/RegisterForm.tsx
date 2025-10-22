@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { UserPlus, Eye, EyeOff } from 'lucide-react';
 import Button from '../common/Button';
 import { useAuth } from '../../hooks';
@@ -6,11 +7,10 @@ import { VALIDATION_RULES } from '../../utils/constants';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
-  onRegistrationSuccess: () => void;
-  onOTPRequired: (otpData: { message: string; otp_code: string; expires_in_minutes: number; email: string }) => void;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegistrationSuccess, onOTPRequired }) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -31,6 +31,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegistra
       newErrors.email = 'Email is required';
     } else if (!VALIDATION_RULES.email.pattern.test(formData.email)) {
       newErrors.email = VALIDATION_RULES.email.message;
+    } else if (!formData.email.endsWith('@feuji.com')) {
+      newErrors.email = 'Enter a Valid mail';
     }
 
     // Username validation
@@ -83,12 +85,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegistra
       const result = await response.json();
 
       if (response.ok) {
-        // Trigger OTP modal for email verification
-        onOTPRequired({
-          message: result.message,
-          otp_code: result.otp_code,
-          expires_in_minutes: result.expires_in_minutes,
-          email: formData.email
+        // Navigate to registration OTP verification page
+        navigate('/verify-registration', {
+          state: {
+            email: formData.email,
+            expiresInMinutes: result.expires_in_minutes
+          }
         });
       } else {
         // Handle validation errors

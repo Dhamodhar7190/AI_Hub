@@ -106,6 +106,13 @@ class ApiService {
     });
   }
 
+  async verifyRegistrationOTP(data: OTPRequest): Promise<{ message: string }> {
+    return this.request('/auth/verify-registration-otp', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getCurrentUser(): Promise<User> {
     return this.request('/auth/me');
   }
