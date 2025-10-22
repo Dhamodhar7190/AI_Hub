@@ -1,17 +1,21 @@
-import { 
-  User, 
-  Agent, 
-  Category, 
-  LoginRequest, 
-  RegisterRequest, 
-  OTPRequest, 
-  AuthResponse, 
+import {
+  User,
+  Agent,
+  Category,
+  LoginRequest,
+  RegisterRequest,
+  OTPRequest,
+  AuthResponse,
   OTPResponse,
   AgentCreateRequest,
   AgentFilters,
   AgentResponse,
   AdminStats,
-  ApiError
+  ApiError,
+  Review,
+  ReviewCreateRequest,
+  RatingCreateRequest,
+  AgentRatingStats
 } from '../types';
 
 class ApiService {
@@ -19,8 +23,8 @@ class ApiService {
   private token: string | null = null;
 
   constructor() {
-    // this.baseUrl = 'http://13.200.13.37:8000'; // Production server
-    this.baseUrl = 'http://localhost:8000'; // Local development
+    this.baseUrl = 'http://13.200.13.37:8000'; // Production server
+    // this.baseUrl = 'http://localhost:8000'; // Local development
     this.token = localStorage.getItem('auth_token');
   }
 
@@ -242,6 +246,69 @@ class ApiService {
 
   async getAdminStats(): Promise<AdminStats> {
     return this.request('/admin/stats');
+  }
+
+  // Agent tracking endpoints
+  async trackAgentClick(
+    agentId: number,
+    clickType: 'modal_open' | 'new_tab' | 'external_link',
+    referrer?: string
+  ): Promise<{ message: string }> {
+    const params = new URLSearchParams();
+    params.append('click_type', clickType);
+    if (referrer) params.append('referrer', referrer);
+
+    return this.request(`/agents/${agentId}/track-click?${params.toString()}`, {
+      method: 'POST',
+    });
+  }
+
+  async trackAgentSession(agentId: number, durationSeconds: number): Promise<{ message: string }> {
+    const params = new URLSearchParams();
+    params.append('duration_seconds', durationSeconds.toString());
+
+    return this.request(`/agents/${agentId}/track-session?${params.toString()}`, {
+      method: 'POST',
+    });
+  }
+
+  // Rating & Review endpoints
+  async rateAgent(agentId: number, rating: number): Promise<{ message: string; rating: number; average_rating: number; total_ratings: number }> {
+    return this.request(`/agents/${agentId}/rate`, {
+      method: 'POST',
+      body: JSON.stringify({ rating }),
+    });
+  }
+
+  async getAgentRatingStats(agentId: number): Promise<AgentRatingStats> {
+    return this.request(`/agents/${agentId}/rating-stats`);
+  }
+
+  async createReview(agentId: number, data: ReviewCreateRequest): Promise<Review> {
+    return this.request(`/agents/${agentId}/review`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getAgentReviews(agentId: number, skip: number = 0, limit: number = 20): Promise<Review[]> {
+    const params = new URLSearchParams();
+    params.append('skip', skip.toString());
+    params.append('limit', limit.toString());
+
+    return this.request(`/agents/${agentId}/reviews?${params.toString()}`);
+  }
+
+  async deleteReview(agentId: number): Promise<{ message: string }> {
+    return this.request(`/agents/${agentId}/review`, {
+      method: 'DELETE',
+    });
+  }
+
+  async markReviewHelpful(agentId: number, reviewId: number): Promise<{ message: string; helpful_count: number }> {
+    return this.request(`/agents/${agentId}/reviews/${reviewId}/helpful`, {
+      method: 'POST',
+    });
   }
 }
 

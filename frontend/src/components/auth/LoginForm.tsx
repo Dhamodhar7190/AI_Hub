@@ -32,8 +32,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
     setIsLoading(true);
 
     try {
-      // const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/login`, { // Production server
-      const response = await fetch(`http://localhost:8000/api/v1/auth/login`, { // Local development
+      const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/login`, { // Production server
+      // const response = await fetch(`http://localhost:8000/api/v1/auth/login`, { // Local development
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

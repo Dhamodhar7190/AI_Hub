@@ -26,7 +26,11 @@ class User(Base):
     # Relationships
     agents = relationship("Agent", back_populates="author", foreign_keys="[Agent.author_id]")
     views = relationship("AgentView", back_populates="user")
-    
+    clicks = relationship("AgentClick", back_populates="user")
+    sessions = relationship("AgentSession", back_populates="user")
+    ratings = relationship("AgentRating", back_populates="user")
+    reviews = relationship("AgentReview", back_populates="user")
+
     # Self-referential relationship for approval
     approved_by_user = relationship("User", remote_side="User.id")
     

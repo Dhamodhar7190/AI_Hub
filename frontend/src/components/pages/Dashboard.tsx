@@ -54,8 +54,20 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleAgentClick = (agent: Agent) => {
-    setSelectedAgent(agent);
+  const handleAgentClick = async (agent: Agent) => {
+    try {
+      // Fetch agent details and record view
+      const updatedAgent = await apiService.getAgent(agent.id);
+
+      // Track the modal open click
+      await apiService.trackAgentClick(agent.id, 'modal_open', 'dashboard');
+
+      setSelectedAgent(updatedAgent);
+    } catch (error) {
+      console.error('Failed to load agent:', error);
+      // Fallback to using the existing agent data
+      setSelectedAgent(agent);
+    }
   };
 
   const handleModalClose = () => {

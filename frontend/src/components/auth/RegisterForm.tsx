@@ -69,8 +69,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
     }
 
     try {
-      // const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/register`, { // Production server
-      const response = await fetch(`http://localhost:8000/api/v1/auth/register`, { // Local development
+      const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/register`, { // Production server
+      // const response = await fetch(`http://localhost:8000/api/v1/auth/register`, { // Local development
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

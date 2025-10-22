@@ -95,6 +95,37 @@ export interface AgentResponse {
   offset: number;
 }
 
+// Rating & Review Types
+export interface Review {
+  id: number;
+  agent_id: number;
+  user_id: number;
+  rating: number;
+  review_text: string;
+  is_helpful_count: number;
+  reviewed_at: string;
+  updated_at: string;
+  user: User;
+}
+
+export interface ReviewCreateRequest {
+  rating: number;
+  review_text: string;
+}
+
+export interface RatingCreateRequest {
+  rating: number;
+}
+
+export interface AgentRatingStats {
+  average_rating: number;
+  rating_count: number;
+  review_count: number;
+  rating_distribution: {
+    [key: string]: number; // {1: 0, 2: 1, 3: 5, 4: 10, 5: 20}
+  };
+}
+
 // Admin Types
 export interface AdminStats {
   agents: {
