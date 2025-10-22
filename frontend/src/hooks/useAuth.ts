@@ -39,12 +39,12 @@ export const useAuthState = (): UseAuthReturn => {
     initAuth();
   }, []);
 
-  const login = async (username: string): Promise<OTPResponse> => {
+  const login = async (email: string): Promise<OTPResponse> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const response = await apiService.login({ username });
+      const response = await apiService.login({ email });
       return response;
     } catch (error) {
       const errorMessage = error instanceof ApiError ? error.message : 'Login failed';
@@ -55,16 +55,16 @@ export const useAuthState = (): UseAuthReturn => {
     }
   };
 
-  const verifyOTP = async (username: string, otp: string): Promise<void> => {
+  const verifyOTP = async (email: string, otp: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
-      const response = await apiService.verifyOTP({ 
-        username, 
-        otp_code: otp 
+      const response = await apiService.verifyOTP({
+        email,
+        otp_code: otp
       });
-      
+
       apiService.setToken(response.access_token);
       setUser(response.user);
     } catch (error) {

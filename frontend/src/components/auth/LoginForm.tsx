@@ -5,12 +5,12 @@ import { useAuth } from '../../hooks';
 import { OTPResponse } from '../../types';
 
 interface LoginFormProps {
-  onOTPRequired: (otpData: OTPResponse & { username: string }) => void;
+  onOTPRequired: (otpData: OTPResponse & { email: string }) => void;
   onSwitchToRegister: () => void;
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ onOTPRequired, onSwitchToRegister }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -18,28 +18,43 @@ const LoginForm: React.FC<LoginFormProps> = ({ onOTPRequired, onSwitchToRegister
     e.preventDefault();
     setError('');
 
-    if (!username.trim()) {
-      setError('Username is required');
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/login`, {
+      // const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/login`, { // Production server
+      const response = await fetch(`http://localhost:8000/api/v1/auth/login`, { // Local development
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username }),
+        body: JSON.stringify({ email }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        onOTPRequired({ ...result, username });
+        onOTPRequired({ ...result, email });
       } else {
-        setError(result.detail || 'Login failed');
+        // Handle validation errors
+        if (Array.isArray(result.detail)) {
+          setError(result.detail[0]?.msg || 'Login failed');
+        } else if (typeof result.detail === 'string') {
+          setError(result.detail);
+        } else {
+          setError('Login failed');
+        }
       }
     } catch (error) {
       setError('Network error. Please try again.');
@@ -61,14 +76,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onOTPRequired, onSwitchToRegister
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-gray-300 mb-2 font-medium">Username</label>
+          <label className="block text-gray-300 mb-2 font-medium">Email</label>
           <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:border-orange-500 focus:outline-none transition-colors"
-            placeholder="Enter your username"
-            autoComplete="username"
+            placeholder="Enter your email"
+            autoComplete="email"
           />
         </div>
 

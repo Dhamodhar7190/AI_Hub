@@ -21,27 +21,27 @@ class AuthService:
         self.db = db
     
     async def register_user(
-        self, 
-        email: str, 
-        username: str, 
+        self,
+        email: str,
+        username: str,
         password: str
     ) -> dict:
-        """Register a new user"""
-        
+        """Register a new user and send OTP for email verification"""
+
         # Check if user already exists
         if self.db.query(User).filter(User.email == email).first():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
-        
+
         if self.db.query(User).filter(User.username == username).first():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Username already taken"
             )
-        
-        # Create new user (inactive until admin approval)
+
+        # Create new user (inactive until OTP verification and admin approval)
         db_user = User(
             email=email,
             username=username,
@@ -49,91 +49,144 @@ class AuthService:
             roles=["user"],
             is_active=False
         )
-        
+
+        # Generate and store OTP for email verification
+        otp_code = generate_otp()
+        db_user.otp_code = otp_code
+        db_user.otp_expires_at = datetime.utcnow() + timedelta(
+            minutes=settings.OTP_EXPIRE_MINUTES
+        )
+
         self.db.add(db_user)
         self.db.commit()
         self.db.refresh(db_user)
-        
-        # Notify admins about new registration
-        await self._notify_admins_new_user(username, email)
-        
+
+        # Send OTP via email for verification
+        email_result = await email_service.send_otp_email(
+            to_email=email,
+            otp_code=otp_code,
+            username=username
+        )
+
         return {
-            "message": "Registration successful. Waiting for admin approval.",
-            "user_id": db_user.id
+            "message": "Registration initiated. Please verify your email with the OTP sent.",
+            "user_id": db_user.id,
+            "otp_code": email_result.get("otp_code", ""),
+            "expires_in_minutes": email_result.get("expires_in_minutes", 5)
+        }
+
+    async def verify_registration_otp(
+        self,
+        email: str,
+        otp_code: str
+    ) -> dict:
+        """Verify OTP and complete registration"""
+
+        user = self.db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+
+        # Check OTP validity
+        if not user.otp_code or user.otp_expires_at < datetime.utcnow():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="OTP has expired. Please register again."
+            )
+
+        if user.otp_code != otp_code:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid OTP code"
+            )
+
+        # Clear OTP after successful verification
+        user.otp_code = None
+        user.otp_expires_at = None
+        self.db.commit()
+
+        # Notify admins about new registration
+        await self._notify_admins_new_user(user.username, user.email)
+
+        return {
+            "message": "Email verified successfully. Waiting for admin approval.",
+            "user_id": user.id
         }
     
-    async def initiate_login(self, username: str) -> dict:
+    async def initiate_login(self, email: str) -> dict:
         """Initiate login process by sending OTP"""
-        
-        user = self.db.query(User).filter(User.username == username).first()
+
+        user = self.db.query(User).filter(User.email == email).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid username"
+                detail="Invalid email address"
             )
-        
+
         # Refresh user object to get latest database state
         self.db.refresh(user)
-        
+
         if not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Account not activated. Please wait for admin approval."
             )
-        
+
         # Generate and store OTP
         otp_code = generate_otp()
         user.otp_code = otp_code
         user.otp_expires_at = datetime.utcnow() + timedelta(
             minutes=settings.OTP_EXPIRE_MINUTES
         )
-        
+
         self.db.commit()
-        
+
         # Send OTP via email service
         email_result = await email_service.send_otp_email(
             to_email=user.email,
             otp_code=otp_code,
-            username=username
+            username=user.username
         )
-        
+
         return email_result
     
     async def verify_otp_and_login(
-        self, 
-        username: str, 
+        self,
+        email: str,
         otp_code: str
     ) -> dict:
         """Verify OTP and complete login"""
-        
-        user = self.db.query(User).filter(User.username == username).first()
+
+        user = self.db.query(User).filter(User.email == email).first()
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid username"
+                detail="Invalid email address"
             )
-        
+
         # Refresh user object to get latest database state
         self.db.refresh(user)
-        
+
         # Check OTP validity
         if not user.otp_code or user.otp_expires_at < datetime.utcnow():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="OTP has expired. Please request a new one."
             )
-        
+
         if user.otp_code != otp_code:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid OTP code"
             )
-        
+
         # Clear OTP after successful verification
         user.otp_code = None
         user.otp_expires_at = None
         self.db.commit()
-        
+
         # Create access token
         access_token_expires = timedelta(
             minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
@@ -142,7 +195,7 @@ class AuthService:
             subject=user.username,
             expires_delta=access_token_expires
         )
-        
+
         return {
             "access_token": access_token,
             "token_type": "bearer",

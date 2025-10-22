@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserPlus } from 'lucide-react';
+import { UserPlus, Eye, EyeOff } from 'lucide-react';
 import Button from '../common/Button';
 import { useAuth } from '../../hooks';
 import { VALIDATION_RULES } from '../../utils/constants';
@@ -7,9 +7,10 @@ import { VALIDATION_RULES } from '../../utils/constants';
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
   onRegistrationSuccess: () => void;
+  onOTPRequired: (otpData: { message: string; otp_code: string; expires_in_minutes: number; email: string }) => void;
 }
 
-const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegistrationSuccess }) => {
+const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegistrationSuccess, onOTPRequired }) => {
   const [formData, setFormData] = useState({
     email: '',
     username: '',
@@ -18,6 +19,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegistra
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [message, setMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { isLoading } = useAuth();
 
   const validateForm = () => {
@@ -64,7 +67,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegistra
     }
 
     try {
-      const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/register`, {
+      // const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/register`, { // Production server
+      const response = await fetch(`http://localhost:8000/api/v1/auth/register`, { // Local development
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -79,15 +83,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegistra
       const result = await response.json();
 
       if (response.ok) {
-        setMessage(result.message || 'Registration successful! Please wait for admin approval.');
-        setFormData({
-          email: '',
-          username: '',
-          password: '',
-          confirmPassword: '',
+        // Trigger OTP modal for email verification
+        onOTPRequired({
+          message: result.message,
+          otp_code: result.otp_code,
+          expires_in_minutes: result.expires_in_minutes,
+          email: formData.email
         });
       } else {
-        setMessage(result.detail || 'Registration failed');
+        // Handle validation errors
+        if (Array.isArray(result.detail)) {
+          setMessage(result.detail[0]?.msg || 'Registration failed');
+        } else if (typeof result.detail === 'string') {
+          setMessage(result.detail);
+        } else {
+          setMessage('Registration failed');
+        }
       }
     } catch (error) {
       setMessage('Network error. Please try again.');
@@ -155,33 +166,61 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin, onRegistra
 
         <div>
           <label className="block text-gray-300 mb-2 font-medium">Password</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            className={`w-full p-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
-              errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-orange-500'
-            }`}
-            placeholder="Choose a password"
-            autoComplete="new-password"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              className={`w-full p-3 pr-12 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
+                errors.password ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-orange-500'
+              }`}
+              placeholder="Choose a password"
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+              tabIndex={-1}
+            >
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
           {errors.password && <p className="mt-1 text-sm text-red-400">{errors.password}</p>}
         </div>
 
         <div>
           <label className="block text-gray-300 mb-2 font-medium">Confirm Password</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            className={`w-full p-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
-              errors.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-orange-500'
-            }`}
-            placeholder="Confirm your password"
-            autoComplete="new-password"
-          />
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className={`w-full p-3 pr-12 bg-gray-800 border rounded-lg text-white placeholder-gray-400 focus:outline-none transition-colors ${
+                errors.confirmPassword ? 'border-red-500 focus:border-red-500' : 'border-gray-700 focus:border-orange-500'
+              }`}
+              placeholder="Confirm your password"
+              autoComplete="new-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-300 transition-colors"
+              tabIndex={-1}
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
+            </button>
+          </div>
           {errors.confirmPassword && <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>}
         </div>
 

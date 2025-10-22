@@ -1,5 +1,6 @@
 // API Configuration
-export const API_BASE_URL = 'http://13.200.13.37:8000';
+// export const API_BASE_URL = 'http://13.200.13.37:8000'; // Production server
+export const API_BASE_URL = 'http://localhost:8000'; // Local development
 export const API_VERSION = '/api/v1';
 
 // Authentication

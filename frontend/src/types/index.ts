@@ -45,7 +45,7 @@ export interface PaginatedResponse<T> {
 
 // Auth Types
 export interface LoginRequest {
-  username: string;
+  email: string;
 }
 
 export interface RegisterRequest {
@@ -55,7 +55,7 @@ export interface RegisterRequest {
 }
 
 export interface OTPRequest {
-  username: string;
+  email: string;
   otp_code: string;
 }
 
@@ -139,8 +139,8 @@ export interface ButtonProps {
 // Hook Types
 export interface UseAuthReturn {
   user: User | null;
-  login: (username: string) => Promise<OTPResponse>;
-  verifyOTP: (username: string, otp: string) => Promise<void>;
+  login: (email: string) => Promise<OTPResponse>;
+  verifyOTP: (email: string, otp: string) => Promise<void>;
   register: (data: RegisterRequest) => Promise<{ message: string }>;
   logout: () => void;
   clearError: () => void;

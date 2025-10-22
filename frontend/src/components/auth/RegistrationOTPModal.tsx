@@ -2,28 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { Shield, Copy, Check } from 'lucide-react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
-import { useAuth } from '../../hooks';
 
-interface OTPModalProps {
+interface RegistrationOTPModalProps {
   isOpen: boolean;
   onClose: () => void;
   email: string;
   otpCode: string;
   expiresInMinutes: number;
+  onSuccess: () => void;
 }
 
-const OTPModal: React.FC<OTPModalProps> = ({
+const RegistrationOTPModal: React.FC<RegistrationOTPModalProps> = ({
   isOpen,
   onClose,
   email,
   otpCode,
-  expiresInMinutes
+  expiresInMinutes,
+  onSuccess
 }) => {
   const [enteredOTP, setEnteredOTP] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState(expiresInMinutes * 60); // Convert to seconds
-  const { verifyOTP, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
 
   // Countdown timer
   useEffect(() => {
@@ -33,7 +35,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          setError('OTP has expired. Please try logging in again.');
+          setError('OTP has expired. Please register again.');
           return 0;
         }
         return prev - 1;
@@ -71,6 +73,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
 
     if (!enteredOTP.trim()) {
       setError('Please enter the OTP code');
@@ -82,12 +85,42 @@ const OTPModal: React.FC<OTPModalProps> = ({
       return;
     }
 
+    setIsLoading(true);
+
     try {
-      await verifyOTP(email, enteredOTP);
-      // Auth hook will handle the successful login
-      onClose();
+      // const response = await fetch(`http://13.200.13.37:8000/api/v1/auth/verify-registration-otp`, { // Production server
+      const response = await fetch(`http://localhost:8000/api/v1/auth/verify-registration-otp`, { // Local development
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          otp_code: enteredOTP,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setSuccess(result.message || 'Email verified successfully!');
+        setTimeout(() => {
+          onSuccess();
+          onClose();
+        }, 2000);
+      } else {
+        if (Array.isArray(result.detail)) {
+          setError(result.detail[0]?.msg || 'Invalid OTP code');
+        } else if (typeof result.detail === 'string') {
+          setError(result.detail);
+        } else {
+          setError('Invalid OTP code');
+        }
+      }
     } catch (err: any) {
-      setError(err.message || 'Invalid OTP code');
+      setError(err.message || 'Failed to verify OTP');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -98,18 +131,18 @@ const OTPModal: React.FC<OTPModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Enter OTP Code">
+    <Modal isOpen={isOpen} onClose={onClose} title="Verify Your Email">
       <div className="space-y-6">
         {/* OTP Display for Testing */}
         <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
           <div className="flex items-center gap-3 mb-2">
             <Shield className="w-5 h-5 text-blue-400" />
-            <h4 className="font-medium text-blue-400">OTP Verification</h4>
+            <h4 className="font-medium text-blue-400">Email Verification</h4>
           </div>
           <p className="text-sm text-blue-300 mb-3">
-            Your OTP code for testing:
+            We've sent a verification code to <strong>{email}</strong>
           </p>
-          
+
           {/* OTP Display */}
           <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
             <div className="flex items-center justify-between">
@@ -148,6 +181,13 @@ const OTPModal: React.FC<OTPModalProps> = ({
             {formatTime(timeLeft)}
           </p>
         </div>
+
+        {/* Success Message */}
+        {success && (
+          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm">
+            {success}
+          </div>
+        )}
 
         {/* Error Message */}
         {error && (
@@ -190,10 +230,10 @@ const OTPModal: React.FC<OTPModalProps> = ({
               type="submit"
               variant="primary"
               loading={isLoading}
-              disabled={timeLeft === 0}
+              disabled={timeLeft === 0 || !!success}
               className="flex-1"
             >
-              Verify OTP
+              Verify Email
             </Button>
           </div>
         </form>
@@ -209,4 +249,4 @@ const OTPModal: React.FC<OTPModalProps> = ({
   );
 };
 
-export default OTPModal;
+export default RegistrationOTPModal;

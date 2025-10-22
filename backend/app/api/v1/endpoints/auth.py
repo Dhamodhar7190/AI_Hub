@@ -18,16 +18,34 @@ from app.models.user import User
 router = APIRouter()
 
 
-@router.post("/register", response_model=dict)
+@router.post("/register", response_model=OTPDisplay)
 async def register(
     user_data: UserRegister,
     auth_service: AuthService = Depends(get_auth_service)
 ):
-    """Register a new user"""
-    return await auth_service.register_user(
+    """Register a new user and send OTP for email verification"""
+    result = await auth_service.register_user(
         email=user_data.email,
         username=user_data.username,
         password=user_data.password
+    )
+
+    return OTPDisplay(
+        message=result.get("message", "Registration initiated"),
+        otp_code=result.get("otp_code", ""),
+        expires_in_minutes=result.get("expires_in_minutes", 5)
+    )
+
+
+@router.post("/verify-registration-otp", response_model=dict)
+async def verify_registration_otp(
+    otp_data: OTPVerification,
+    auth_service: AuthService = Depends(get_auth_service)
+):
+    """Verify OTP and complete registration"""
+    return await auth_service.verify_registration_otp(
+        email=otp_data.email,
+        otp_code=otp_data.otp_code
     )
 
 
@@ -37,8 +55,8 @@ async def login(
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """Initiate login process - sends OTP to user's email"""
-    result = await auth_service.initiate_login(user_data.username)
-    
+    result = await auth_service.initiate_login(user_data.email)
+
     # Return OTP for testing (since email integration is not ready yet)
     return OTPDisplay(
         message=result.get("message", "OTP sent to your email"),
@@ -54,7 +72,7 @@ async def verify_otp(
 ):
     """Verify OTP and complete login"""
     return await auth_service.verify_otp_and_login(
-        username=otp_data.username,
+        email=otp_data.email,
         otp_code=otp_data.otp_code
     )
 

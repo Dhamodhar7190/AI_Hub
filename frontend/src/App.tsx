@@ -6,6 +6,7 @@ import AuthLayout from './components/auth/AuthLayout';
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
 import OTPModal from './components/auth/OTPModal';
+import RegistrationOTPModal from './components/auth/RegistrationOTPModal';
 import Layout from './components/layout/Layout';
 import Dashboard from './components/pages/Dashboard';
 import SubmitAgent from './components/pages/SubmitAgent';
@@ -19,8 +20,10 @@ import './styles/globals.css';
 // Auth Page Component
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
-  const [showOTP, setShowOTP] = useState(false);
-  const [otpData, setOTPData] = useState<(OTPResponse & { username: string }) | null>(null);
+  const [showLoginOTP, setShowLoginOTP] = useState(false);
+  const [showRegisterOTP, setShowRegisterOTP] = useState(false);
+  const [loginOTPData, setLoginOTPData] = useState<(OTPResponse & { email: string }) | null>(null);
+  const [registerOTPData, setRegisterOTPData] = useState<{ message: string; otp_code: string; expires_in_minutes: number; email: string } | null>(null);
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -35,17 +38,29 @@ const AuthPage: React.FC = () => {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const handleOTPRequired = (data: OTPResponse & { username: string }) => {
-    setOTPData(data);
-    setShowOTP(true);
+  const handleLoginOTPRequired = (data: OTPResponse & { email: string }) => {
+    setLoginOTPData(data);
+    setShowLoginOTP(true);
   };
 
-  const handleOTPClose = () => {
-    setShowOTP(false);
-    setOTPData(null);
+  const handleLoginOTPClose = () => {
+    setShowLoginOTP(false);
+    setLoginOTPData(null);
+  };
+
+  const handleRegisterOTPRequired = (data: { message: string; otp_code: string; expires_in_minutes: number; email: string }) => {
+    setRegisterOTPData(data);
+    setShowRegisterOTP(true);
+  };
+
+  const handleRegisterOTPClose = () => {
+    setShowRegisterOTP(false);
+    setRegisterOTPData(null);
   };
 
   const handleRegistrationSuccess = () => {
+    setShowRegisterOTP(false);
+    setRegisterOTPData(null);
     setIsLogin(true);
   };
 
@@ -56,24 +71,37 @@ const AuthPage: React.FC = () => {
     >
       {isLogin ? (
         <LoginForm
-          onOTPRequired={handleOTPRequired}
+          onOTPRequired={handleLoginOTPRequired}
           onSwitchToRegister={() => setIsLogin(false)}
         />
       ) : (
         <RegisterForm
           onSwitchToLogin={() => setIsLogin(true)}
           onRegistrationSuccess={handleRegistrationSuccess}
+          onOTPRequired={handleRegisterOTPRequired}
         />
       )}
 
-      {/* OTP Modal */}
-      {showOTP && otpData && (
+      {/* Login OTP Modal */}
+      {showLoginOTP && loginOTPData && (
         <OTPModal
-          isOpen={showOTP}
-          onClose={handleOTPClose}
-          username={otpData.username}
-          otpCode={otpData.otp_code}
-          expiresInMinutes={otpData.expires_in_minutes}
+          isOpen={showLoginOTP}
+          onClose={handleLoginOTPClose}
+          email={loginOTPData.email}
+          otpCode={loginOTPData.otp_code}
+          expiresInMinutes={loginOTPData.expires_in_minutes}
+        />
+      )}
+
+      {/* Registration OTP Modal */}
+      {showRegisterOTP && registerOTPData && (
+        <RegistrationOTPModal
+          isOpen={showRegisterOTP}
+          onClose={handleRegisterOTPClose}
+          email={registerOTPData.email}
+          otpCode={registerOTPData.otp_code}
+          expiresInMinutes={registerOTPData.expires_in_minutes}
+          onSuccess={handleRegistrationSuccess}
         />
       )}
     </AuthLayout>

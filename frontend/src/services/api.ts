@@ -19,7 +19,8 @@ class ApiService {
   private token: string | null = null;
 
   constructor() {
-    this.baseUrl = 'http://13.200.13.37:8000';
+    // this.baseUrl = 'http://13.200.13.37:8000'; // Production server
+    this.baseUrl = 'http://localhost:8000'; // Local development
     this.token = localStorage.getItem('auth_token');
   }
 

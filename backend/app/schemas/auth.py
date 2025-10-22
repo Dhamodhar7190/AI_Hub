@@ -4,7 +4,7 @@ from typing import List, Optional
 
 
 class UserLogin(BaseModel):
-    username: str
+    email: EmailStr
 
 
 class UserRegister(BaseModel):
@@ -23,13 +23,13 @@ class UserRegister(BaseModel):
 
 
 class OTPVerification(BaseModel):
-    username: str
+    email: EmailStr
     otp_code: str
-    
+
     class Config:
         json_schema_extra = {
             "example": {
-                "username": "johndoe",
+                "email": "user@example.com",
                 "otp_code": "123456"
             }
         }
