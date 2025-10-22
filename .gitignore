@@ -266,5 +266,6 @@ uploads/
 
 # API keys and secrets
 .env
+.env.docker
 config.json
 secrets.json
