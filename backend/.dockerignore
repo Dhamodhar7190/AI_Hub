@@ -22,7 +22,6 @@ wheels/
 MANIFEST
 
 # Virtual environments
-.env
 .venv
 env/
 venv/
@@ -78,3 +77,6 @@ docs/
 # Scripts that shouldn't be in container
 setup_admin.py
 create_admin.py
+
+# Note: .env file will be copied into the Docker image
+# Set environment variables in your deployment environment or via docker-compose
